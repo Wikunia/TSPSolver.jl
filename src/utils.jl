@@ -31,6 +31,11 @@ function simple_parse_tsp(filename; verbose = false)
     return cities
 end
 
+"""
+    get_edges_cost(edges, cost_mat)
+
+Return the sum of the cost of the edges
+"""
 function get_edges_cost(edges, cost_mat)
     edges_cost = 0.0
     for edge in edges
@@ -39,6 +44,12 @@ function get_edges_cost(edges, cost_mat)
     return edges_cost
 end
 
+"""
+    get_tour_cost(tour, cost_mat)
+
+Return the cost of the tour for example with `tour = [1,3,5]`
+the sum would be `cost_mat[1,3]+cost_mat[3,5]+cost_mat[5,1]`.
+"""
 function get_tour_cost(tour, cost_mat)
     cost = 0.0
     for i in 1:length(tour)-1

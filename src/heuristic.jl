@@ -1,3 +1,9 @@
+"""
+    greedy(points, cost)
+
+Create a tour which starts at point 1 and goes to the nearest unvisited neighbor in each step.
+Return the tour as a list of points and the cost of the tour
+"""
 function greedy(points, cost)
     N = length(points)
     visited = Set{Int}(1)
