@@ -1,7 +1,10 @@
 name = "TSPSolver"
 uuid = "1bb0ef61-54ec-4182-894e-db986df6f2ff"
-authors = ["Ole Kröger <ole@zellerfeld.com> and contributors"]
+authors = ["Ole Kröger <o.kroeger@opensourc.es> and contributors"]
 version = "0.1.0"
+
+[deps]
+Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 
 [compat]
 julia = "1.6"

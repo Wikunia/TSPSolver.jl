@@ -2,5 +2,6 @@ using TSPSolver
 using Test
 
 @testset "TSPSolver.jl" begin
-    # Write your tests here.
+    
+    include("unit/main.jl")
 end
