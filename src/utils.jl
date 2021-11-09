@@ -31,12 +31,23 @@ function simple_parse_tsp(filename; verbose = false)
     return cities
 end
 
-function get_tour_cost(edges, cost)
-    tour_cost = 0.0
+function get_edges_cost(edges, cost_mat)
+    edges_cost = 0.0
     for edge in edges
-        tour_cost += cost[edge.src, edge.dst] 
+        edges_cost += cost_mat[edge.src, edge.dst] 
     end
-    return tour_cost
+    return edges_cost
+end
+
+function get_tour_cost(tour, cost_mat)
+    cost = 0.0
+    for i in 1:length(tour)-1
+        src = tour[i]
+        dst = tour[i+1]
+        cost += cost_mat[src,dst]
+    end
+    cost += cost_mat[tour[end],tour[1]]
+    return cost
 end
 
 """

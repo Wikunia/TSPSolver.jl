@@ -51,7 +51,7 @@ Return the tree as a list of edges and the cost which can be used as the lower b
 function get_1tree(cost)
     N = size(cost, 1)
     tree = prim_mst(complete_graph(N-1), cost)
-    mst_cost = get_tour_cost(tree, cost)
+    mst_cost = get_edges_cost(tree, cost)
     # extra cost for the two edges from the last point to the two nearest neighbors
     nearest_neighbors = partialsortperm(cost[:,N], 1:3)
     n_actual_neighbors = 0

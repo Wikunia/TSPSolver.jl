@@ -4,6 +4,7 @@ using Graphs
 
 include("utils.jl")
 include("lb.jl")
+include("heuristic.jl")
 
 function optimize(input_path)
     points = simple_parse_tsp(input_path)
