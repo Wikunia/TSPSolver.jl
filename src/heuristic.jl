@@ -1,5 +1,5 @@
 """
-    greedy(cost, fixed_edges=Edge[], disallowed_edges=Edge[])
+    greedy(cost, fixed_edges=zeros(Int, size(cost,1)), disallowed_edges=Dict{Int,Set{Int}}())
 
 Create a tour which starts at point 1 and goes to the nearest unvisited neighbor in each step.
 Return the tour as a list of ids and the cost of the tour.
