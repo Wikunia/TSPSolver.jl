@@ -1,12 +1,12 @@
 """
-    greedy(points, cost, fixed_edges=Edge[], disallowed_edges=Edge[])
+    greedy(cost, fixed_edges=Edge[], disallowed_edges=Edge[])
 
 Create a tour which starts at point 1 and goes to the nearest unvisited neighbor in each step.
-Return the tour as a list of points and the cost of the tour.
+Return the tour as a list of ids and the cost of the tour.
 If no tour is possible return `nothing, NaN`
 """
-function greedy(points, cost, fixed_edges=zeros(Int, size(cost,1)), disallowed_edges=Dict{Int,Set{Int}}())
-    N = length(points)
+function greedy(cost, fixed_edges=zeros(Int, size(cost,1)), disallowed_edges=Dict{Int,Set{Int}}())
+    N = size(cost,1)
     visited = Set{Int}()
     # the destination shouldn't be used before by some other edge
     c = 0

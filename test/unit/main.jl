@@ -14,14 +14,14 @@ end
     N = length(points)
     cost = [TSPSolver.euclidean_distance(points[i], points[j]) for i = 1:N, j = 1:N]
 
-    tour, lb = TSPSolver.greedy(points, cost)
+    tour, lb = TSPSolver.greedy(cost)
     @test length(tour) == N
     @test lb > 118293.52381566973
 
     # fix the first edges as it was in greedy anyway
     fixed_edges = zeros(Int, N)
     fixed_edges[tour[1]] = tour[2]
-    new_tour, new_lb = TSPSolver.greedy(points, cost, fixed_edges)
+    new_tour, new_lb = TSPSolver.greedy(cost, fixed_edges)
     @test new_lb ≈ lb    
     @test new_tour == tour 
     
@@ -30,7 +30,7 @@ end
     fixed_edges[1] = 2
     fixed_edges[2] = 3
     fixed_edges[4] = 8
-    tour, lb = TSPSolver.greedy(points, cost, fixed_edges)
+    tour, lb = TSPSolver.greedy(cost, fixed_edges)
     c = 0
     for i in 1:N
         if fixed_edges[tour[i]] != 0
@@ -50,7 +50,7 @@ end
     disallow_edges = Dict{Int, Set{Int}}()
     disallow_edges[7] = Set([i for i in 1:N if !(i in [2,3,8,9])])
     
-    tour, lb = TSPSolver.greedy(points, cost, fixed_edges, disallow_edges)
+    tour, lb = TSPSolver.greedy(cost, fixed_edges, disallow_edges)
     c = 0
     for i in 1:N
         if fixed_edges[tour[i]] != 0
@@ -77,7 +77,7 @@ end
     disallow_edges = Dict{Int, Set{Int}}()
     disallow_edges[7] = Set([i for i in 1:N if !(i in [2,3,8])])
     
-    tour, lb = TSPSolver.greedy(points, cost, fixed_edges, disallow_edges)
+    tour, lb = TSPSolver.greedy(cost, fixed_edges, disallow_edges)
     @test tour === nothing
     @test isnan(lb)
 
@@ -87,7 +87,7 @@ end
     fixed_edges[2] = 8
     fixed_edges[4] = 8
 
-    tour, lb = TSPSolver.greedy(points, cost, fixed_edges)
+    tour, lb = TSPSolver.greedy(cost, fixed_edges)
     @test tour === nothing
     @test isnan(lb)
 end
