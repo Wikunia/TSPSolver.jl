@@ -80,4 +80,14 @@ end
     tour, lb = TSPSolver.greedy(points, cost, fixed_edges, disallow_edges)
     @test tour === nothing
     @test isnan(lb)
+
+    # fix the same dst twice
+    fixed_edges = zeros(Int, N)
+    fixed_edges[1] = 2
+    fixed_edges[2] = 8
+    fixed_edges[4] = 8
+
+    tour, lb = TSPSolver.greedy(points, cost, fixed_edges)
+    @test tour === nothing
+    @test isnan(lb)
 end
