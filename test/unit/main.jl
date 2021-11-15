@@ -8,6 +8,52 @@
     @test lb < 118293.52381566973
 end
 
+@testset "1tree" begin
+    module_path = dirname(pathof(TSPSolver))
+    points = TSPSolver.simple_parse_tsp(joinpath(module_path, "../test/data/bier127.tsp"))
+    N = length(points)
+    cost = [TSPSolver.euclidean_distance(points[i], points[j]) for i = 1:N, j = 1:N]
+
+    tree, lb = TSPSolver.get_1tree(cost, zeros((N, N)))
+
+    # fix the first two edges as in the tree
+    fixed_edges = zeros(Int, N)
+    fixed_edges[tree[1].src] = tree[1].dst
+    fixed_edges[tree[2].src] = tree[2].dst
+
+    fix_disallow_costs = TSPSolver.get_fix_disallow_costs(fixed_edges, Dict{Int, Set{Int}}())
+
+    new_tree, new_lb = TSPSolver.get_1tree(cost, fix_disallow_costs)
+    @test new_tree == tree
+    @test new_lb ≈ lb
+
+    # fix the first two edges as in the tree and disallow some that weren't used
+    fixed_edges = zeros(Int, N)
+    fixed_edges[tree[1].src] = tree[1].dst
+    fixed_edges[tree[2].src] = tree[2].dst
+
+    disallow_edges = Dict{Int, Set{Int}}()
+    five_connected_to = []
+    for edge in tree
+        if edge.src == 5
+            push!(five_connected_to, edge.dst)
+        end
+        if edge.dst == 5
+            push!(five_connected_to, edge.src)
+        end
+    end
+
+    disallow_edges[5] = Set([i for i in 1:N if !(i in five_connected_to)])
+
+    fix_disallow_costs = TSPSolver.get_fix_disallow_costs(fixed_edges, disallow_edges)
+
+    new_tree, new_lb = TSPSolver.get_1tree(cost, fix_disallow_costs)
+    @test new_tree == tree
+    @test new_lb ≈ lb
+
+
+end
+
 @testset "Greedy" begin
     module_path = dirname(pathof(TSPSolver))
     points = TSPSolver.simple_parse_tsp(joinpath(module_path, "../test/data/bier127.tsp"))
