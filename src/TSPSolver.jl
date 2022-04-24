@@ -1,6 +1,8 @@
 module TSPSolver
 
 using Graphs
+using MetaGraphs
+using DataStructures
 
 include("utils.jl")
 include("lb.jl")

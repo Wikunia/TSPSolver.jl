@@ -1,0 +1,10 @@
+NAME : bier4
+COMMENT : 4 Biergaerten in Augsburg (Juenger/Reinelt)
+TYPE : TSP
+DIMENSION : 4
+EDGE_WEIGHT_TYPE : EUC_2D
+NODE_COORD_SECTION
+   1   9860  14152
+   2   9396  14616
+   3  11252  14848
+   4  11020  13456
