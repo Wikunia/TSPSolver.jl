@@ -3,6 +3,7 @@
     g = TSPSolver.simple_parse_tsp(joinpath(module_path, "../test/data/bier127.tsp"))
 
     tree, lb = TSPSolver.get_optimized_1tree(g)
+    @show lb
     @time tree, lb = TSPSolver.get_optimized_1tree(g)
     @test lb < 118293.52381566973
 end
@@ -12,16 +13,16 @@ end
     g = TSPSolver.simple_parse_tsp(joinpath(module_path, "../test/data/bier127.tsp"))
     original_g = deepcopy(g)
 
-    @time tour, lb = TSPSolver.greedy(g)
-    @show lb
+    @time tour, ub = TSPSolver.greedy(g)
+    @show ub
     @test length(tour) == nv(g)
-    @test lb > 118293.52381566973
+    @test ub > 118293.52381566973
 
     # fix the first edges as it was in greedy anyway
     v1, v2 = tour[1], tour[2]
     extra_cost = TSPSolver.fix_edge!(g, (v1, v2))
-    new_tour, new_lb = TSPSolver.greedy(g, extra_cost)
-    @test new_lb ≈ lb    
+    new_tour, new_ub = TSPSolver.greedy(g, extra_cost)
+    @test new_ub ≈ ub    
     @test new_tour == tour
     
     # fix a couple of edges and check that they were fixed correctly
@@ -34,7 +35,7 @@ end
     extra_cost += TSPSolver.fix_edge!(g, (1,2))
     extra_cost += TSPSolver.fix_edge!(g, (2,3))
     extra_cost += TSPSolver.fix_edge!(g, (4,8))
-    tour, lb = TSPSolver.greedy(g, extra_cost)
+    tour, ub = TSPSolver.greedy(g, extra_cost)
     c = 0
     for i in 1:nv(g)
         if fixed_edges[tour[i]] != 0
@@ -64,9 +65,9 @@ end
         rem_edge!(g, 7, i)
     end
     
-    tour, lb = TSPSolver.greedy(g, extra_cost)
+    tour, ub = TSPSolver.greedy(g, extra_cost)
     if tour === nothing 
-        @test isnan(lb)
+        @test isnan(ub)
     else
         c = 0
         for i in 1:N

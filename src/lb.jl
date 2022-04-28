@@ -9,13 +9,12 @@ Return the tree as a list of edges and the cost of the tree.
 """
 function get_optimized_1tree(original_g)
     g = deepcopy(original_g)
-    cost = weights(g)
-    N = size(cost, 1)
-    tree, lb = get_1tree(cost)
+    N = nv(g)
+    tree, lb = get_1tree(g)
     degrees = zeros(Int, N)
     point_benefit = zeros(Float64, N)
     extra_cost = 0.0
-    max_cost = maximum(cost)
+    max_cost = maximum(weights(g))
 
     cost_factor = max_cost/N
     for _ in 1:10
@@ -27,13 +26,13 @@ function get_optimized_1tree(original_g)
         end
         for i in 1:N
             point_benefit[i] = cost_factor*(2-degrees[i])
-            for j in neighbors(g,i)
-                weight = get_prop(g, i, j, :weight)
-                set_prop!(g, i, j, :weight, weight-point_benefit[i])
+            for neighbor in neighbors(g, i)
+                cost = get_prop(g, i, neighbor, :weight)
+                set_prop!(g, i, neighbor, :weight, cost-point_benefit[i])
             end
         end
         extra_cost = 2*sum(point_benefit)
-        tree, lb = get_1tree(cost)
+        tree, lb = get_1tree(g)
         cost_factor *= 0.9
     end
 
@@ -41,22 +40,31 @@ function get_optimized_1tree(original_g)
 end
 
 """
-    get_1tree(cost)
+    get_1tree(g)
 
-Get a 1tree and cost of it based on a cost matrix.
+Get a 1tree and cost of it based on a given graph.
 Create an MST first for the first 1 to N-1 points and then add two edges which connects the Nth point to its two nearest neighbors.
 
 Can be optimized by adding extra costs with [`get_optimized_1tree`](@ref) which obtains a better lower bound.
 
-
 Return the tree as a list of edges and the cost which can be used as the lower bound for the TSP problem.
 """
-function get_1tree(cost)
-    N = size(cost, 1)
-    tree = prim_mst(complete_graph(N-1), cost)
-    mst_cost = get_edges_cost(tree, cost)
+function get_1tree(g)
+    N = nv(g)
+    last_neighbors = collect(neighbors(g, N))
+    weights_last_neighbors = [get_prop(g, N, n, :weight) for n in last_neighbors]
+    # temporary remove that last node for the mst
+    rem_vertex!(g, N)
+    tree = prim_mst(g)
+    
+    mst_cost = get_edges_cost(g, tree)
+    # add edges back in
+    @assert add_vertex!(g)
+    for i in 1:length(last_neighbors)
+        add_edge!(g, N, last_neighbors[i], :weight, weights_last_neighbors[i])
+    end
     # extra cost for the two edges from the last point to the two nearest neighbors
-    nearest_neighbors = partialsortperm(cost[:,N], 1:3)
+    nearest_neighbors = partialsortperm(weights_last_neighbors, 1:3)
     n_actual_neighbors = 0
     extra_costs = 0.0
     for neighbor in nearest_neighbors
@@ -64,7 +72,7 @@ function get_1tree(cost)
         if neighbor != N
             n_actual_neighbors += 1
             push!(tree, Edge(N, neighbor))
-            extra_costs += cost[neighbor, N]
+            extra_costs += get_prop(g, neighbor, N, :weight)
         end
     end
 

@@ -43,10 +43,10 @@ end
 
 Return the sum of the cost of the edges
 """
-function get_edges_cost(edges, cost_mat)
+function get_edges_cost(g, edges)
     edges_cost = 0.0
     for edge in edges
-        edges_cost += cost_mat[edge.src, edge.dst] 
+        edges_cost += get_prop(g, edge.src, edge.dst, :weight) 
     end
     return edges_cost
 end
