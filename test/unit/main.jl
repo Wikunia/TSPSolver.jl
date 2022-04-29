@@ -6,6 +6,12 @@
     @show lb
     @time tree, lb = TSPSolver.get_optimized_1tree(g)
     @test lb < 118293.52381566973
+
+    TSPSolver.fix_edge!(g, (2, 3))
+    TSPSolver.fix_edge!(g, (2, 5))
+    tree, lb = TSPSolver.get_optimized_1tree(g)
+    @test Edge(2,3) in tree || Edge(3,2) in tree
+    @test Edge(2,5) in tree || Edge(5,2) in tree
 end
 
 @testset "Greedy" begin
@@ -21,8 +27,8 @@ end
     # fix the first edges as it was in greedy anyway
     v1, v2 = tour[1], tour[2]
     extra_cost = TSPSolver.fix_edge!(g, (v1, v2))
-    new_tour, new_ub = TSPSolver.greedy(g, extra_cost)
-    @test new_ub ≈ ub    
+    new_tour, new_ub = TSPSolver.greedy(g)
+    @test new_ub + extra_cost ≈ ub    
     @test new_tour == tour
     
     # fix a couple of edges and check that they were fixed correctly
@@ -35,7 +41,8 @@ end
     extra_cost += TSPSolver.fix_edge!(g, (1,2))
     extra_cost += TSPSolver.fix_edge!(g, (2,3))
     extra_cost += TSPSolver.fix_edge!(g, (4,8))
-    tour, ub = TSPSolver.greedy(g, extra_cost)
+    tour, ub = TSPSolver.greedy(g)
+    ub += extra_cost
     c = 0
     for i in 1:nv(g)
         if fixed_edges[tour[i]] != 0
@@ -65,7 +72,8 @@ end
         rem_edge!(g, 7, i)
     end
     
-    tour, ub = TSPSolver.greedy(g, extra_cost)
+    tour, ub = TSPSolver.greedy(g)
+    ub += extra_cost
     if tour === nothing 
         @test isnan(ub)
     else

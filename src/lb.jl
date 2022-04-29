@@ -7,7 +7,7 @@ that the point will have two edges. A negative benefit is used for points which 
 
 Return the tree as a list of edges and the cost of the tree.
 """
-function get_optimized_1tree(original_g)
+function get_optimized_1tree(original_g; runs=10)
     g = deepcopy(original_g)
     N = nv(g)
     tree, lb = get_1tree(g)
@@ -17,7 +17,7 @@ function get_optimized_1tree(original_g)
     max_cost = maximum(weights(g))
 
     cost_factor = max_cost/N
-    for _ in 1:10
+    for _ in 1:runs
         degrees .= 0
         point_benefit .= 0.0
         for edge in tree

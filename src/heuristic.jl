@@ -1,12 +1,12 @@
 """
-    greedy(g, extra_cost=0.0)
+    greedy(g)
 
 Create a tour which starts at node 1 and goes to the nearest unvisited neighbor in each step.
 Return the tour as a list of nodes and the cost of the tour.
 If no tour is possible return `nothing, Inf`. If no tour was found but there isn't a proof that no tour exists 
 return `nothing, NaN`.
 """
-function greedy(g, extra_cost=0.0)
+function greedy(g)
     N = nv(g)
     sorted_neighbors = Vector{Vector{Int}}(undef, N)
     for i in 1:N
@@ -56,7 +56,7 @@ function greedy(g, extra_cost=0.0)
             tour[cp] = neighbor
         end
     end
-    return tour, extra_cost + get_tour_cost(g, tour)
+    return tour, get_tour_cost(g, tour)
 end
 
 function next_neighbor!(g, tour, cp, node_next, visited, sorted_neighbors)

@@ -39,7 +39,7 @@ function simple_parse_tsp(filename; verbose = false)
 end
 
 """
-    get_edges_cost(edges, cost_mat)
+    get_edges_cost(g, edges)
 
 Return the sum of the cost of the edges
 """
@@ -49,23 +49,6 @@ function get_edges_cost(g, edges)
         edges_cost += get_prop(g, edge.src, edge.dst, :weight) 
     end
     return edges_cost
-end
-
-"""
-    get_tour_cost(tour, cost_mat)
-
-Return the cost of the tour for example with `tour = [1,3,5]`
-the sum would be `cost_mat[1,3]+cost_mat[3,5]+cost_mat[5,1]`.
-"""
-function get_tour_cost(tour, cost_mat)
-    cost = 0.0
-    for i in 1:length(tour)-1
-        src = tour[i]
-        dst = tour[i+1]
-        cost += cost_mat[src,dst]
-    end
-    cost += cost_mat[tour[end],tour[1]]
-    return cost
 end
 
 function get_tour_cost(g, tour)
