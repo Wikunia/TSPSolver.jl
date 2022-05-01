@@ -20,6 +20,18 @@ end
 
 struct Root
     g::MetaGraph
+    cost::Matrix{Float64}
+    function Root(g::MetaGraph)
+        cost = zeros((nv(g), nv(g)))
+        for i in 1:nv(g)
+            for j in i+1:nv(g)
+                weight = get_prop(g, i, j, :weight)
+                cost[i,j] = weight
+                cost[j,i] = weight
+            end
+        end
+        new(g,cost)
+    end
 end
 
 function Bonobo.get_branching_indices(root::Root)
@@ -27,22 +39,23 @@ function Bonobo.get_branching_indices(root::Root)
 end
 
 function Bonobo.evaluate_node!(tree::BnBTree{Node, Root}, node::Node)
-    g = deepcopy(tree.root.g)
+    root = deepcopy(tree.root)
     extra_cost = 0.0
     for fixed_edge in node.fixed_edges
-        extra_cost += get_prop(g, fixed_edge..., :weight)
-        fix_edge!(g, fixed_edge)
+        extra_cost += fix_edge!(root, fixed_edge)
     end
     for disallowed_edge in node.disallowed_edges
-        rem_edge!(g, disallowed_edge...)
+        disallow_edge!(root, disallowed_edge)
     end
+    
+    # @show node.fixed_edges
+    # @show node.disallowed_edges
 
-    #@show node.fixed_edges
-    #@show node.disallowed_edges
-
-    @time mst, lb = get_optimized_1tree(g; runs=20)
-    @time tour, ub = greedy(g)
-    println("=============")
+    mst, lb = get_optimized_1tree(root.cost; runs=50)
+    # @time mst, lb = get_1tree(weights(g))
+    tour, ub = greedy(root.g)
+    # @show mst
+    # println("=============")
     lb += extra_cost 
     ub += extra_cost
     node.mst = mst
@@ -51,12 +64,12 @@ function Bonobo.evaluate_node!(tree::BnBTree{Node, Root}, node::Node)
     if isinf(ub)
         return NaN, NaN
     end
-    #@show lb
-    #@show ub
-    #@show tree.incumbent
-    #@show tree.lb
-    #@show length(tree.nodes)
-    #println("======================================================")
+    # @show lb
+    @show ub
+    @show tree.incumbent
+    @show tree.lb
+    @show length(tree.nodes)
+    println("======================================================")
     return lb, ub
 end
 

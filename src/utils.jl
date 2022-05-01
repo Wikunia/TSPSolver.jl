@@ -43,10 +43,23 @@ end
 
 Return the sum of the cost of the edges
 """
-function get_edges_cost(g, edges)
+function get_edges_cost(g::AbstractGraph, edges)
     edges_cost = 0.0
     for edge in edges
         edges_cost += get_prop(g, edge.src, edge.dst, :weight) 
+    end
+    return edges_cost
+end
+
+"""
+    get_edges_cost(cost, edges)
+
+Return the sum of the cost of the edges
+"""
+function get_edges_cost(cost, edges)
+    edges_cost = 0.0
+    for edge in edges
+        edges_cost += cost[edge.src, edge.dst]
     end
     return edges_cost
 end
@@ -70,8 +83,16 @@ Copied from https://github.com/ericphanson/TravelingSalesmanExact.jl
 """
 euclidean_distance(point1, point2) = sqrt((point1[1] - point2[1])^2 + (point1[2] - point2[2])^2)
 
-function fix_edge!(g, edge)
-    cost = get_prop(g, edge..., :weight)
-    set_prop!(g, edge..., :weight, 0.0)
+function fix_edge!(root, edge)
+    cost = get_prop(root.g, edge..., :weight)
+    set_prop!(root.g, edge..., :weight, 0.0)
+    root.cost[edge[1], edge[2]] = 0.0
+    root.cost[edge[2], edge[1]] = 0.0
     return cost
+end
+
+function disallow_edge!(root, edge)
+    rem_edge!(root.g, edge...)
+    root.cost[edge[1], edge[2]] = Inf
+    root.cost[edge[2], edge[1]] = Inf
 end
