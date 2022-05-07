@@ -82,13 +82,22 @@ end
 function Bonobo.get_branching_variable(tree::BnBTree{Node, Root}, ::LONGEST_EDGE, node::Node)
     longest_len = 0.0
     longest_edge = -1
+    tour_edges = Set{Tuple{Int, Int}}()
+    longest_is_tour_edge = true
+    if node.tour !== nothing 
+        for i in 1:length(node.tour)
+            push!(tour_edges, extrema((node.tour[i], node.tour[mod1(i+1, end)])))
+        end
+    end
     for edge in node.mst
-        edge_tpl = (edge.src, edge.dst)
+        edge_tpl = extrema((edge.src, edge.dst))
         if !(edge_tpl in node.fixed_edges) && !(edge_tpl in node.disallowed_edges)
             len = get_prop(tree.root.g, edge_tpl..., :weight)
-            if len > longest_len
+            is_tour_edge = edge_tpl in tour_edges
+            if (len > longest_len && !is_tour_edge) || longest_is_tour_edge
                 longest_edge = edge
                 longest_len = len
+                longest_is_tour_edge = is_tour_edge
             end
         end
     end
@@ -98,7 +107,7 @@ end
 function Bonobo.get_branching_nodes_info(tree::BnBTree{Node, Root}, node::Node, branching_edge::Edge)
     nodes_info = NamedTuple[]
     new_fixed_edges = deepcopy(node.fixed_edges)
-    push!(new_fixed_edges, (branching_edge.src, branching_edge.dst))
+    push!(new_fixed_edges, extrema((branching_edge.src, branching_edge.dst)))
     push!(nodes_info, (
         tour = nothing,
         mst = nothing, 
@@ -107,7 +116,7 @@ function Bonobo.get_branching_nodes_info(tree::BnBTree{Node, Root}, node::Node, 
     ))
 
     new_disallowed_edges = deepcopy(node.disallowed_edges)
-    push!(new_disallowed_edges, (branching_edge.src, branching_edge.dst))
+    push!(new_disallowed_edges, extrema((branching_edge.src, branching_edge.dst)))
     push!(nodes_info, (
         tour = nothing,
         mst = nothing, 
@@ -126,7 +135,8 @@ function optimize(input_path)
         Node = Node,
         root = Root(g),
         sense = :Min,
-        Value = Vector{Int}
+        Value = Vector{Int},
+        log_table = false
     )
 
     Bonobo.set_root!(bnb_model, (
