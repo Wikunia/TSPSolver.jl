@@ -11,6 +11,7 @@ MetaGraphs = "626554b9-1ddb-594c-aa3c-2596fe9399a5"
 
 [compat]
 Graphs = "1"
+Bonobo = "0.1.1"
 julia = "1.6"
 
 [extras]

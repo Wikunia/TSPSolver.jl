@@ -72,3 +72,36 @@ function next_neighbor!(g, tour, cp, node_next, visited, sorted_neighbors)
     end
     return nothing
 end
+
+function two_opt(tour, tour_cost, cost_matrix)
+    swapped = true
+    while swapped 
+        swapped = false
+        for i in 1:length(tour)
+            for j in i+1:length(tour)
+                swap_cost = get_swap_cost(tour, i, j, cost_matrix)
+                if swap_cost < -1e-6
+                    tour_cost += swap_cost
+                    swap!(tour, i, j)
+                    swapped = true
+                    break
+                end
+            end
+            swapped && break
+        end
+    end
+    return tour, tour_cost
+end
+
+function get_swap_cost(tour, i, j, cost_matrix)
+    cost = -cost_matrix[tour[i], tour[mod1(i+1,end)]]
+    cost -= cost_matrix[tour[j], tour[mod1(j+1,end)]]
+
+    cost += cost_matrix[tour[i], tour[j]]
+    cost += cost_matrix[tour[mod1(i+1,end)], tour[mod1(j+1,end)]]
+    return cost
+end
+
+function swap!(tour, i, j)
+    reverse!(tour, i+1, j)
+end

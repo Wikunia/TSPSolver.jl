@@ -9,13 +9,14 @@ include("utils.jl")
 include("lb.jl")
 include("heuristic.jl")
 
+struct LONGEST_EDGE <: Bonobo.AbstractBranchStrategy end
+
 mutable struct Node <: AbstractNode
     std :: BnBNodeInfo
     tour :: Union{Nothing, Vector{Int}}
     mst :: Union{Nothing, Vector{Edge{Int}}}
     fixed_edges :: Vector{Tuple{Int,Int}}
     disallowed_edges :: Vector{Tuple{Int,Int}}
-    status :: Symbol
 end
 
 struct Root
@@ -54,8 +55,9 @@ function Bonobo.evaluate_node!(tree::BnBTree{Node, Root}, node::Node)
     mst, lb = get_optimized_1tree(root.cost; runs=50)
     # @time mst, lb = get_1tree(weights(g))
     tour, ub = greedy(root.g)
-    # @show mst
-    # println("=============")
+    if tour !== nothing
+        tour, ub = two_opt(tour, ub, root.cost)
+    end
     lb += extra_cost 
     ub += extra_cost
     node.mst = mst
@@ -64,12 +66,12 @@ function Bonobo.evaluate_node!(tree::BnBTree{Node, Root}, node::Node)
     if isinf(ub)
         return NaN, NaN
     end
-    # @show lb
-    @show ub
-    @show tree.incumbent
-    @show tree.lb
-    @show length(tree.nodes)
-    println("======================================================")
+   # @show lb
+   # @show ub
+   # @show tree.incumbent
+   # @show tree.lb
+   # @show length(tree.nodes)
+   # println("======================================================")
     return lb, ub
 end
 
@@ -77,7 +79,7 @@ function Bonobo.get_relaxed_values(tree::BnBTree{Node, Root}, node::Node)
     return node.tour
 end
 
-function Bonobo.get_branching_variable(tree::BnBTree{Node, Root}, ::Bonobo.FIRST, node::Node)
+function Bonobo.get_branching_variable(tree::BnBTree{Node, Root}, ::LONGEST_EDGE, node::Node)
     longest_len = 0.0
     longest_edge = -1
     for edge in node.mst
@@ -102,7 +104,6 @@ function Bonobo.get_branching_nodes_info(tree::BnBTree{Node, Root}, node::Node, 
         mst = nothing, 
         fixed_edges = new_fixed_edges,
         disallowed_edges = deepcopy(node.disallowed_edges),
-        status = :NotCalledYet
     ))
 
     new_disallowed_edges = deepcopy(node.disallowed_edges)
@@ -112,7 +113,6 @@ function Bonobo.get_branching_nodes_info(tree::BnBTree{Node, Root}, node::Node, 
         mst = nothing, 
         fixed_edges = deepcopy(node.fixed_edges),
         disallowed_edges = new_disallowed_edges,
-        status = :NotCalledYet
     ))
     return nodes_info
 end
@@ -121,8 +121,8 @@ function optimize(input_path)
     g = simple_parse_tsp(input_path)
     
     bnb_model = Bonobo.initialize(
-        traverse_strategy = Bonobo.BFS,
-        branch_strategy = Bonobo.FIRST,
+        traverse_strategy = Bonobo.BFS(),
+        branch_strategy = LONGEST_EDGE(),
         Node = Node,
         root = Root(g),
         sense = :Min,
@@ -133,8 +133,7 @@ function optimize(input_path)
         tour = nothing,
         mst = nothing,
         fixed_edges = Vector{Tuple{Int,Int}}(),
-        disallowed_edges = Vector{Tuple{Int,Int}}(),
-        status = :NotCalledYet
+        disallowed_edges = Vector{Tuple{Int,Int}}()
     ))
 
     Bonobo.optimize!(bnb_model)
