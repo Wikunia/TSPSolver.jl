@@ -1,69 +1,107 @@
 """
-    greedy(points, cost, fixed_edges=Edge[], disallowed_edges=Edge[])
+    greedy(g)
 
-Create a tour which starts at point 1 and goes to the nearest unvisited neighbor in each step.
-Return the tour as a list of points and the cost of the tour.
-If no tour is possible return `nothing, NaN`
+Create a tour which starts at node 1 and goes to the nearest unvisited neighbor in each step.
+Return the tour as a list of nodes and the cost of the tour.
+If no tour is possible return `nothing, Inf`. If no tour was found but there isn't a proof that no tour exists 
+return `nothing, NaN`.
 """
-function greedy(points, cost, fixed_edges=zeros(Int, size(cost,1)), disallowed_edges=Dict{Int,Set{Int}}())
-    N = length(points)
-    visited = Set{Int}()
-    # the destination shouldn't be used before by some other edge
-    c = 0
+function greedy(g)
+    N = nv(g)
+    sorted_neighbors = Vector{Vector{Int}}(undef, N)
     for i in 1:N
-        if fixed_edges[i] != 0
-            push!(visited, fixed_edges[i])
-            c += 1
+        vec_neighbors = collect(neighbors(g,i))
+        NN = length(vec_neighbors)
+        weights = zeros(NN)
+        for j in 1:NN
+            weights[j] = get_prop(g, i, vec_neighbors[j], :weight)
+        end
+        order = sortperm(weights)
+        sorted_neighbors[i] = vec_neighbors[order]
+        p = findfirst(>(0),weights[order])
+        # if three edges are fixed
+        if p > 3
+            return nothing, Inf
+        end
+        # if both end points are fixed we can fix them here
+        if p == 3
+            sorted_neighbors[i] = sorted_neighbors[i][1:2]
         end
     end
-    if c != length(visited)
-        return nothing, NaN
-    end
-    
-    tour = Int[1]
-    last_city = 1
-    push!(visited, 1)
-    while length(tour) < N
-        # if already fixed
-        if fixed_edges[last_city] != 0
-            last_city = fixed_edges[last_city]
-        else
-            last_city = get_next_city(last_city, visited, cost, disallowed_edges)
-            # no edge found
-            if last_city == 0
-                return nothing, NaN
+
+    visited = zeros(Bool, N)
+    node_next = ones(Int, N)
+    tour = zeros(Int, N)
+    tour[1] = 1
+    visited[1] = true
+    cp = 1
+    backtrack_c = 0
+    while 1 <= cp < N
+        # simply give up searching :D
+        if backtrack_c == 1000000
+            return nothing, NaN
+        end
+        neighbor = next_neighbor!(g, tour, cp, node_next, visited, sorted_neighbors[tour[cp]])
+        if neighbor === nothing
+            backtrack_c += 1
+            node_next[tour[cp]] = 1
+            visited[tour[cp]] = false
+            cp -= 1
+            if cp == 0
+                break
             end
-        end
-        push!(visited, last_city)
-        push!(tour, last_city)
-    end
-    # the last edge doesn't match
-    if fixed_edges[last_city] != 0 && tour[1] != fixed_edges[last_city]
-        return nothing, NaN
-    end
-    return tour, get_tour_cost(tour, cost)
-end
-
-function get_next_city(city, visited, cost, all_disallowed_edges)
-    disallowed_edges = get(all_disallowed_edges, city, nothing)
-    return get_next_city(city, visited, cost, disallowed_edges)
-end
-
-function get_next_city(city, visited, cost, ::Nothing)
-    return argmin(j->j in visited ? Inf : cost[j, city], 1:size(cost, 1))
-end
-
-function get_next_city(city, visited, cost, disallowed_edges::Set{Int})
-    min_val = Inf
-    min_idx = 0
-    for j in 1:size(cost,1) 
-        j in disallowed_edges && continue
-        j in visited && continue
-        val = cost[city, j]
-        if val < min_val
-            min_idx = j
-            min_val = val
+        else 
+            visited[neighbor] = true
+            cp += 1
+            tour[cp] = neighbor
         end
     end
-    return min_idx
+    return tour, get_tour_cost(g, tour)
+end
+
+function next_neighbor!(g, tour, cp, node_next, visited, sorted_neighbors)
+    for neighbor_id in node_next[tour[cp]]:length(sorted_neighbors)
+        node_next[tour[cp]] += 1
+        neighbor = sorted_neighbors[neighbor_id]
+        visited[neighbor] && continue
+        if (cp == length(tour)-1 && !has_edge(g, neighbor, 1))
+            continue
+        end
+
+        return sorted_neighbors[neighbor_id]
+    end
+    return nothing
+end
+
+function two_opt(tour, tour_cost, cost_matrix)
+    swapped = true
+    while swapped 
+        swapped = false
+        for i in 1:length(tour)
+            for j in i+1:length(tour)
+                swap_cost = get_swap_cost(tour, i, j, cost_matrix)
+                if swap_cost < -1e-6
+                    tour_cost += swap_cost
+                    swap!(tour, i, j)
+                    swapped = true
+                    break
+                end
+            end
+            swapped && break
+        end
+    end
+    return tour, tour_cost
+end
+
+function get_swap_cost(tour, i, j, cost_matrix)
+    cost = -cost_matrix[tour[i], tour[mod1(i+1,end)]]
+    cost -= cost_matrix[tour[j], tour[mod1(j+1,end)]]
+
+    cost += cost_matrix[tour[i], tour[j]]
+    cost += cost_matrix[tour[mod1(i+1,end)], tour[mod1(j+1,end)]]
+    return cost
+end
+
+function swap!(tour, i, j)
+    reverse!(tour, i+1, j)
 end

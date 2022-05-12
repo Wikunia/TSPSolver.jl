@@ -3,16 +3,14 @@
 
 Try to parse the ".tsp" file given by `filename`. Very simple implementation
 just to be able to test the optimization; may break on other files. Returns a
-list of cities for use in `get_optimal_tour`.
-Copied from https://github.com/ericphanson/TravelingSalesmanExact.jl
+graph of cities and edges for use in `get_optimal_tour`.
 """
 function simple_parse_tsp(filename; verbose = false)
-    cities = Vector{Float64}[]
+    cities = Vector{Tuple{Float64, Float64}}()
     section = :Meta
     for line in readlines(filename)
         line = strip(line)
-        line == "EOF" && break
-
+        line == "EOF" && break       
         if section == :Meta && verbose 
             println(line)
         end
@@ -21,43 +19,59 @@ function simple_parse_tsp(filename; verbose = false)
             @assert length(nums) == 3
             x = parse(Float64, nums[2])
             y = parse(Float64, nums[3])
-            push!(cities, [x, y])
+            push!(cities, (x, y))
         end
         # change section type
         if line == "NODE_COORD_SECTION"
             section = :NODE_COORD_SECTION
         end
     end
-    return cities
+
+    N = length(cities)
+    g = MetaGraph(N)
+    for i in 1:N
+        for j in i+1:N
+            add_edge!(g, i, j, :weight, euclidean_distance(cities[i], cities[j]))
+        end
+    end
+
+    return g
 end
 
 """
-    get_edges_cost(edges, cost_mat)
+    get_edges_cost(g, edges)
 
 Return the sum of the cost of the edges
 """
-function get_edges_cost(edges, cost_mat)
+function get_edges_cost(g::AbstractGraph, edges)
     edges_cost = 0.0
     for edge in edges
-        edges_cost += cost_mat[edge.src, edge.dst] 
+        edges_cost += get_prop(g, edge.src, edge.dst, :weight) 
     end
     return edges_cost
 end
 
 """
-    get_tour_cost(tour, cost_mat)
+    get_edges_cost(cost, edges)
 
-Return the cost of the tour for example with `tour = [1,3,5]`
-the sum would be `cost_mat[1,3]+cost_mat[3,5]+cost_mat[5,1]`.
+Return the sum of the cost of the edges
 """
-function get_tour_cost(tour, cost_mat)
+function get_edges_cost(cost, edges)
+    edges_cost = 0.0
+    for edge in edges
+        edges_cost += cost[edge.src, edge.dst]
+    end
+    return edges_cost
+end
+
+function get_tour_cost(g, tour)
     cost = 0.0
     for i in 1:length(tour)-1
         src = tour[i]
         dst = tour[i+1]
-        cost += cost_mat[src,dst]
+        cost += get_prop(g, src, dst, :weight)
     end
-    cost += cost_mat[tour[end],tour[1]]
+    cost += get_prop(g, tour[end], tour[1], :weight)
     return cost
 end
 
@@ -68,3 +82,17 @@ The usual Euclidean distance measure.
 Copied from https://github.com/ericphanson/TravelingSalesmanExact.jl
 """
 euclidean_distance(point1, point2) = sqrt((point1[1] - point2[1])^2 + (point1[2] - point2[2])^2)
+
+function fix_edge!(root, edge)
+    cost = get_prop(root.g, edge..., :weight)
+    set_prop!(root.g, edge..., :weight, 0.0)
+    root.cost[edge[1], edge[2]] = 0.0
+    root.cost[edge[2], edge[1]] = 0.0
+    return cost
+end
+
+function disallow_edge!(root, edge)
+    rem_edge!(root.g, edge...)
+    root.cost[edge[1], edge[2]] = Inf
+    root.cost[edge[2], edge[1]] = Inf
+end
