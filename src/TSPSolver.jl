@@ -136,7 +136,6 @@ function optimize(input_path)
         root = Root(g),
         sense = :Min,
         Value = Vector{Int},
-        log_table = false
     )
 
     Bonobo.set_root!(bnb_model, (
