@@ -25,6 +25,10 @@ function get_optimized_1tree(original_cost; runs=10)
             degrees[edge.src] += 1
             degrees[edge.dst] += 1
         end
+        # if each degree is 2 we found a tour
+        if all(x->x==2, degrees)
+            return tree, lb+extra_cost, true 
+        end
         for i in 1:N
             point_benefit[i] = cost_factor*(2-degrees[i])
             cost[i, :] .-= point_benefit[i]
@@ -35,7 +39,7 @@ function get_optimized_1tree(original_cost; runs=10)
         cost_factor *= 0.9
     end
 
-    return tree, lb+extra_cost 
+    return tree, lb+extra_cost, false 
 end
 
 """

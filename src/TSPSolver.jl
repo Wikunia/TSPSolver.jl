@@ -40,26 +40,42 @@ function Bonobo.get_branching_indices(root::Root)
 end
 
 function Bonobo.evaluate_node!(tree::BnBTree{Node, Root}, node::Node)
-    root = deepcopy(tree.root)
-    extra_cost = 0.0
+    root = tree.root
+    sum_extra_cost = 0.0
+    fixed_costs = Vector{Tuple{Tuple{Int,Int},Float64}}()
+    disallowed_costs = Vector{Tuple{Tuple{Int,Int},Float64}}()
     for fixed_edge in node.fixed_edges
-        extra_cost += fix_edge!(root, fixed_edge)
+        extra_cost = fix_edge!(root, fixed_edge)
+        sum_extra_cost += extra_cost
+        push!(fixed_costs, (fixed_edge, extra_cost))
     end
     for disallowed_edge in node.disallowed_edges
+        cost = get_prop(root.g, disallowed_edge..., :weight)
+        push!(disallowed_costs, (disallowed_edge, cost))
         disallow_edge!(root, disallowed_edge)
     end
-    
-    # @show node.fixed_edges
-    # @show node.disallowed_edges
 
-    mst, lb = get_optimized_1tree(root.cost; runs=50)
-    # @time mst, lb = get_1tree(weights(g))
-    tour, ub = greedy(root.g)
-    if tour !== nothing
-        tour, ub = two_opt(tour, ub, root.cost)
+    mst, lb, is_tour = get_optimized_1tree(root.cost; runs=50)
+    if is_tour
+        tour = edges_to_tour(nv(root.g), mst)
+        ub = lb
+    else 
+        tour, ub = greedy(root.g)
+        if tour !== nothing
+            tour, ub = two_opt(tour, ub, root.cost)
+        end
     end
-    lb += extra_cost 
-    ub += extra_cost
+
+    for fixed in fixed_costs
+        set_cost!(root, fixed[1], fixed[2])
+    end
+    for disallowed in disallowed_costs
+        add_edge!(root.g, disallowed[1])
+        set_cost!(root, disallowed[1], disallowed[2])
+    end
+
+    lb += sum_extra_cost 
+    ub += sum_extra_cost
     node.mst = mst
     node.tour = tour
     # no tour can exist
@@ -135,7 +151,7 @@ function optimize(input_path)
         Node = Node,
         root = Root(g),
         sense = :Min,
-        Value = Vector{Int},
+        Value = Vector{Int}
     )
 
     Bonobo.set_root!(bnb_model, (

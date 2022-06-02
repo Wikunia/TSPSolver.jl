@@ -96,3 +96,52 @@ function disallow_edge!(root, edge)
     root.cost[edge[1], edge[2]] = Inf
     root.cost[edge[2], edge[1]] = Inf
 end
+
+function set_cost!(root, edge, cost)
+    set_prop!(root.g, edge..., :weight, cost)
+    root.cost[edge[1], edge[2]] = cost
+    root.cost[edge[2], edge[1]] = cost
+end
+
+"""
+    edges_to_tour(n, edges::Vector{<:AbstractEdge})
+
+Return an edge based on a list of edges.
+"""
+function edges_to_tour(n, edges::Vector{<:AbstractEdge})
+    next_vertex = zeros(Int, (2,n))
+    for edge in edges
+        if next_vertex[1,edge.src] == 0
+            next_vertex[1,edge.src] = edge.dst
+        else 
+            next_vertex[2,edge.src] = edge.dst
+        end
+        if next_vertex[1,edge.dst] == 0
+            next_vertex[1,edge.dst] = edge.src
+        else 
+            next_vertex[2,edge.dst] = edge.src
+        end
+    end
+    tour = zeros(Int, n)
+    tour[1] = 1
+    for i in 2:n
+        tour[i] = get_next_vertex(tour, i, next_vertex)
+    end
+    return tour
+end
+
+"""
+    get_next_vertex(tour, i, next_vertex)
+
+Return the next vertex given a tour the next position and a matrix which maps each vertex to its two possible neighbors.
+"""
+function get_next_vertex(tour, i, next_vertex)
+    if i == 2
+        return next_vertex[1, tour[i-1]]
+    end
+    prev_vertex = tour[i-2]
+    if next_vertex[1, tour[i-1]] == prev_vertex
+        return next_vertex[2, tour[i-1]]
+    end
+    return next_vertex[1, tour[i-1]]
+end
